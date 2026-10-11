@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ödev Odaları</title>
+  <meta name="description" content="İlkokul öğrencileri için 4 kişilik online ödev odaları. Her hafta içi aynı saatte, aynı öğretmenle ödev; Cuma günü veliye gelişim raporu.">
+  <meta name="theme-color" content="#18263A">
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/site.css">
+  <meta property="og:title" content="Ödev Odaları">
+  <meta property="og:description" content="Çocuğunuz ödevini 4 kişilik online odada, bir öğretmenin yanında bitirsin.">
+</head>
+<body>
+  <header class="ust">
+    <div class="kap">
+      <a class="logo" href="/" aria-label="Ödev Odaları ana sayfa"><span id="logo-yer"></span>Ödev Odaları</a>
+      <nav aria-label="Ana menü">
+        <a class="baglanti" href="#nasil">Nasıl işler</a>
+        <a class="baglanti" href="#saatler">Saatler</a>
+        <a class="baglanti" href="#paketler">Paketler</a>
+        <a class="baglanti" href="#sss">Sorular</a>
+        <a class="dugme kucuk" id="ust-giris" href="/giris">Giriş yap</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="kahraman">
+      <div class="kap">
+        <div>
+          <h1>Ödevini evde tek başına değil, odada arkadaşlarıyla bitirsin.</h1>
+          <p class="giris-metni">İlkokul öğrencileri için en fazla 4 kişilik online ödev odaları. Her hafta içi aynı saatte, aynı öğretmenle bir saat. Takıldığı yerde yardım, bitirdiğinde kontrol, Cuma günü size kısa bir gelişim raporu.</p>
+          <div class="eylemler">
+            <a class="dugme" href="/giris?kayit=1">Ücretsiz üye ol</a>
+            <a class="dugme ikincil" href="#paketler">Paketleri gör</a>
+          </div>
+          <p class="not">Ödemeler banka havalesi ile alınır. Kamera kaydı yapılmaz.</p>
+        </div>
+
+        <aside class="aksam" aria-labelledby="aksam-baslik">
+          <div class="aksam-baslik">
+            <h2 id="aksam-baslik">Bu akşamın odaları</h2>
+            <span id="aksam-tarih"></span>
+          </div>
+          <ol id="aksam-liste">
+            <li style="--renk:#1F5F6B"><span class="saat">17:00</span><div><div class="oda-ad">Oda A</div><div class="oda-alt">1–4. sınıf, 60 dakika</div></div><div class="koltuklar"><span class="koltuk"></span><span class="koltuk"></span><span class="koltuk"></span><span class="koltuk"></span></div></li>
+            <li style="--renk:#2E7D5B"><span class="saat">18:15</span><div><div class="oda-ad">Oda B</div><div class="oda-alt">1–4. sınıf, 60 dakika</div></div><div class="koltuklar"><span class="koltuk"></span><span class="koltuk"></span><span class="koltuk"></span><span class="koltuk"></span></div></li>
+            <li style="--renk:#C46A1A"><span class="saat">19:30</span><div><div class="oda-ad">Oda C</div><div class="oda-alt">1–4. sınıf, 60 dakika</div></div><div class="koltuklar"><span class="koltuk"></span><span class="koltuk"></span><span class="koltuk"></span><span class="koltuk"></span></div></li>
+          </ol>
+          <div class="aksam-alt"><span><span class="koltuk dolu"></span>dolu koltuk</span><span><span class="koltuk"></span>boş koltuk</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="bolum beyaz" id="nasil">
+      <div class="kap">
+        <div class="bolum-giris">
+          <h2>Nasıl işler</h2>
+          <p>Üyelikten ilk seansa kadar dört adım. Ödemeyi onayladığımız anda çocuğunuz uygun saatteki odaya otomatik yerleşir.</p>
+        </div>
+        <ol class="adimlar">
+          <li><h3>Üye olun</h3><p>E-posta ile hesap açın, çocuğunuzu sınıfıyla birlikte ekleyin.</p></li>
+          <li><h3>Paketi seçin</h3><p>Size bir sipariş kodu verilir. Tutarı bu kodla IBAN'a havale edin.</p></li>
+          <li><h3>Ödemeyi bildirin</h3><p>Dekontu panelden yükleyin. Kontrol edip onayladığımızda bildirim alırsınız.</p></li>
+          <li><h3>Odaya katılın</h3><p>Seans saatinde paneldeki Meet bağlantısına tıklamanız yeterli.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="bolum" id="seans">
+      <div class="kap iki-sutun">
+        <div>
+          <h2>Bir saat nasıl geçer</h2>
+          <p class="soluk">Her seans aynı ritimle ilerler. Çocuk ne yapacağını bilir, öğretmen herkesi tek tek görür.</p>
+          <div class="dakika-serit" role="img" aria-label="60 dakikalık seans: 5 dakika plan, 45 dakika ödev, 10 dakika kontrol">
+            <div class="d1"><strong>5</strong><span>Plan</span></div>
+            <div class="d2"><strong>45 dk</strong><span>Sessiz çalışma ve soru</span></div>
+            <div class="d3"><strong>10</strong><span>Kontrol</span></div>
+          </div>
+          <p class="soluk kucuk">Yüklediğiniz ödev fotoğrafları seanstan önce öğretmene ulaşır; çocuk odaya girdiğinde ne üzerinde çalışacağı bellidir.</p>
+        </div>
+        <div>
+          <h3>Size her hafta gelenler</h3>
+          <ul class="liste-tik">
+            <li>Hangi gün katıldı, ödevi bitti mi, kaç kez yardım istedi</li>
+            <li>Takıldığı konular ve evde nasıl destek olabileceğiniz</li>
+            <li>Öğretmenin seans notlarından size iletilmek üzere seçtikleri</li>
+            <li>Duyurular ve seans değişiklikleri için anında bildirim</li>
+          </ul>
+          <h3 style="margin-top:1.5rem">Yapmadıklarımız</h3>
+          <ul class="liste-tik liste-carpi">
+            <li>Çocuğunuzun görüntüsünü kaydetmeyiz</li>
+            <li>Ödevi onun yerine yapmayız</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="bolum beyaz" id="saatler">
+      <div class="kap">
+        <div class="bolum-giris">
+          <h2>Haftalık saatler</h2>
+          <p>Çocuğunuz her gün aynı odaya, aynı arkadaşlarının yanına girer. Cumartesi sabahı haftanın genel tekrarı yapılır.</p>
+        </div>
+        <div class="haftalik" id="haftalik"><p class="yukleniyor" style="padding:16px">Saatler yükleniyor…</p></div>
+      </div>
+    </section>
+
+    <section class="bolum" id="paketler">
+      <div class="kap">
+        <div class="bolum-giris">
+          <h2>Paketler</h2>
+          <p>Aylık paketler 30 gün geçerlidir ve seçtiğiniz günlerde sabit bir koltuk ayırır. Ara sıra ihtiyacınız olursa tek seans da alabilirsiniz.</p>
+        </div>
+        <div class="paketler" id="paket-abonelik"><p class="yukleniyor">Paketler yükleniyor…</p></div>
+        <h3 class="paket-baslik-2">İhtiyaç anında</h3>
+        <p class="soluk">Kredi aldığınızda panelden tek tıkla, en az 1 saat sonrasındaki ilk boş koltuğa yerleşirsiniz.</p>
+        <div class="paketler" id="paket-kredi"></div>
+      </div>
+    </section>
+
+    <section class="bolum beyaz" id="sss">
+      <div class="kap iki-sutun">
+        <div>
+          <h2>Sık sorulanlar</h2>
+          <p class="soluk">Burada cevabını bulamadığınız bir soru varsa üye olduktan sonra panelden bize yazabilirsiniz.</p>
+        </div>
+        <div class="sss">
+          <details><summary>Ödemeyi nasıl yapıyorum?</summary><p>Paketi seçtiğinizde size bir sipariş kodu ve IBAN bilgisi gösterilir. Havale açıklamasına bu kodu yazın, sonra panelden "Ödemeyi bildir" ile dekontu yükleyin. Onaylandığında bildirim gelir ve çocuğunuz odaya yerleşir.</p></details>
+          <details><summary>Hangi sınıflar katılabilir?</summary><p>Şu an 1, 2, 3 ve 4. sınıf öğrencileri için odalarımız açık. Ortaokul için koçluk ve rehberlik programı hazırlanıyor.</p></details>
+          <details><summary>Bilgisayar şart mı?</summary><p>Hayır. Tablet ya da telefon da olur. Ödevin fotoğrafını çekip yükleyebilmek ve Google Meet'e bağlanabilmek yeterli. Kulaklık önerilir.</p></details>
+          <details><summary>Çocuğum bir gün katılamazsa ne olur?</summary><p>Aylık pakette o günün koltuğu boş kalır. Seansı biz iptal edersek telafi seansı planlarız. Tek seans kredisini seansa en az 2 saat kala iptal ederseniz krediniz geri yüklenir.</p></details>
+          <details><summary>Odada kaç çocuk oluyor?</summary><p>Hafta içi odalarında en fazla 4, Cumartesi genel tekrar grubunda en fazla 6 çocuk.</p></details>
+          <details><summary>Kamera açık mı olacak?</summary><p>Öğretmenin çocuğu görebilmesi için kamera açık olur, ancak hiçbir görüntü kaydedilmez. Öğretmen yalnızca ödev sayfasının ekran görüntüsünü, size iletmek üzere alabilir.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="bolum kapanis">
+      <div class="kap">
+        <h2>Bu hafta boş koltuk varken yerinizi ayırın.</h2>
+        <p>Üyelik ücretsiz. Çocuğunuzu ekleyip paketleri inceleyin, karar verdiğinizde ödemeyi havale ile yapın.</p>
+        <a class="dugme" href="/giris?kayit=1">Ücretsiz üye ol</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="alt">
+    <div class="kap">
+      <span>© <span id="yil"></span> Ödev Odaları</span>
+      <span><a href="/giris">Veli girişi</a></span>
+    </div>
+  </footer>
+
+  <script type="module" src="/assets/js/anasayfa.js"></script>
+</body>
+</html>
