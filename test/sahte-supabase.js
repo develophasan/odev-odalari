@@ -22,7 +22,7 @@ function oluk(tablo) {
 export function createClient() {
   return {
     from: oluk,
-    rpc: async (ad, arg) => ({ data: (V().rpc || {})[ad] ?? null, error: null }),
+    rpc: async (ad, arg) => { (window.__YAZ ||= []).push(['rpc', ad, arg]); return { data: (V().rpc || {})[ad] ?? null, error: null }; },
     auth: {
       getSession: async () => ({ data: { session: V().oturum ? { user: { id: V().oturum } } : null } }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),

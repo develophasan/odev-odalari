@@ -622,7 +622,7 @@ function baslat(ben) {
         <p class="soluk kucuk">Velilere sipariş oluşturduklarında bu bilgiler gösterilir.</p>
         <div class="satir"><div class="alan"><label for="a-sahip">Hesap sahibi</label><input id="a-sahip" name="hesap_sahibi" required value="${esc(a.hesap_sahibi)}"></div>
           <div class="alan"><label for="a-banka">Banka</label><input id="a-banka" name="banka" required value="${esc(a.banka)}"></div></div>
-        <div class="alan"><label for="a-iban">IBAN</label><input id="a-iban" name="iban" required value="${esc(a.iban)}" pattern="TR\\s?\\d{2}(\\s?\\d{4}){5}\\s?\\d{2}" title="TR ile başlayan 26 karakterlik IBAN"></div>
+        <div class="alan"><label for="a-iban">IBAN</label><input id="a-iban" name="iban" required value="${esc(a.iban)}"><small>TR ile başlayan 26 karakter. Boşluklu ya da boşluksuz yazabilirsiniz.</small></div>
         <div class="alan"><label for="a-not">Ödeme notu</label><input id="a-not" name="odeme_notu" value="${esc(a.odeme_notu)}"></div>
         <div class="satir"><div class="alan"><label for="a-marka">Marka adı</label><input id="a-marka" name="marka" value="${esc(a.marka)}"></div>
           <div class="alan"><label for="a-tel">İletişim telefonu</label><input id="a-tel" name="iletisim_telefon" value="${esc(a.iletisim_telefon)}"></div>
@@ -650,7 +650,9 @@ function baslat(ben) {
       e.preventDefault();
       const v = formVeri(e.currentTarget);
       v.rezervasyon_min_dakika = Number(v.rezervasyon_min_dakika); v.kredi_iade_saat = Number(v.kredi_iade_saat);
-      v.iban = v.iban.toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
+      const ham = v.iban.toUpperCase().replace(/\s+/g, '');
+      if (!/^TR\d{24}$/.test(ham)) { toast('IBAN TR ile başlamalı ve 26 karakter olmalı', true); return; }
+      v.iban = ham.replace(/(.{4})/g, '$1 ').trim();
       islem(e.submitter, async () => { await al(sb.from('ayarlar').update({ ...v, guncellendi: new Date().toISOString() }).eq('id', 1)); toast('Ayarlar kaydedildi'); });
     });
     $('#tatil-form').addEventListener('submit', (e) => {

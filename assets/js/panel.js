@@ -214,9 +214,11 @@ function baslat(ben) {
       const uygun = odalar.filter((o) => o.tur === 'hafta_ici' && c && c.sinif >= o.sinif_min && c.sinif <= o.sinif_max && (!p || p.hafta_ici_gunler.every((g) => o.gunler.includes(g))));
       const goster = p && p.tur === 'abonelik' && p.hafta_ici_gunler.length > 0;
       $('#tercih-alan').hidden = !goster;
+      const onceki = $('#p-oda').value;
       $('#p-oda').innerHTML = `<option value="">Fark etmez, en erken uygun saat</option>` + uygun.map((o) => `<option value="${o.id}">${esc(o.ad)}, ${saatKes(o.baslangic)}–${saatKes(o.bitis)}</option>`).join('');
+      if (uygun.some((o) => o.id === onceki)) $('#p-oda').value = onceki;
     };
-    form.addEventListener('change', tercihGuncelle);
+    form.addEventListener('change', (e) => { if (e.target.id !== 'p-oda') tercihGuncelle(); });
     tercihGuncelle();
     form.addEventListener('submit', (e) => {
       e.preventDefault();
