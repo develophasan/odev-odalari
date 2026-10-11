@@ -10,6 +10,15 @@ const TZ = 'Europe/Istanbul';
 export const GUN_ADLARI = ['', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 export const GUN_KISA = ['', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
+export const ODA_SUTUN = 'id,ad,tur,gunler,baslangic,bitis,kapasite,sinif_min,sinif_max,ogretmen,renk,aktif,sira';
+// Yalnızca gerçek Google Meet bağlantıları gösterilir
+export const guvenliMeet = (u) => (/^https:\/\/meet\.google\.com\/[a-z0-9-]+$/.test(String(u || '')) ? u : '');
+// Kullanıcının görmeye yetkili olduğu Meet bağlantıları: { oda_id: url }
+export async function baglantilar() {
+  const { data } = await sb.from('oda_baglanti').select('oda_id,meet_linki');
+  return Object.fromEntries((data || []).map((b) => [b.oda_id, guvenliMeet(b.meet_linki)]));
+}
+
 export function esc(v) {
   return String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -81,6 +90,9 @@ export function hataMetni(e) {
     [/row-level security/i, 'Bu işlem için yetkiniz yok.'],
     [/Failed to fetch|NetworkError/i, 'Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.'],
     [/mime type|not supported/i, 'Bu dosya türü desteklenmiyor. Fotoğraf (JPG, PNG) veya PDF yükleyin.'],
+    [/check constraint .*uzunluk|value too long/i, 'Yazdığınız metin çok uzun. Lütfen kısaltın.'],
+    [/JWT expired|invalid JWT|refresh_token/i, 'Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.'],
+    [/timeout|timed out|\b50[234]\b/i, 'Sunucu şu an yanıt vermiyor. Biraz sonra tekrar deneyin.'],
     [/exceeded the maximum allowed size|Payload too large/i, 'Dosya 10 MB sınırını aşıyor.'],
   ];
   for (const [r, t] of tablo) if (r.test(m)) return t;
@@ -110,19 +122,59 @@ export async function oturum() {
 export async function profil() {
   const s = await oturum();
   if (!s) return null;
-  const { data } = await sb.from('profiller').select('*').eq('id', s.user.id).maybeSingle();
+  const { data, error } = await sb.from('profiller').select('*').eq('id', s.user.id).maybeSingle();
+  if (error) throw error;
   return data;
+}
+
+function girisSayfasinaGit() {
+  location.replace('/giris?d=' + encodeURIComponent(location.pathname + location.hash));
+}
+
+// Sayfa hiç açılamadığında gösterilen ekran (sunucuya ulaşılamadı vb.)
+export function cokmeEkrani(metin) {
+  document.body.innerHTML = `<main class="kap" style="padding:64px 0;max-width:560px" role="alert">
+    <h1 style="font-size:1.8rem">Sayfa şu an açılamadı</h1>
+    <p class="soluk">${esc(metin)}</p>
+    <p style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="dugme" id="cokme-tekrar">Tekrar dene</button> <a class="dugme ikincil" href="/">Ana sayfa</a></p></main>`;
+  document.getElementById('cokme-tekrar').onclick = () => location.reload();
 }
 
 // Panel sayfaları için koruma: giriş yoksa /giris, yanlış roldeyse doğru panele
 export async function koru(beklenenRol) {
-  const s = await oturum();
-  if (!s) { location.replace('/giris?d=' + encodeURIComponent(location.pathname + location.hash)); return null; }
-  const p = await profil();
-  if (!p) { location.replace('/giris'); return null; }
+  let s;
+  try { s = await oturum(); } catch { s = null; }
+  if (!s) { girisSayfasinaGit(); return null; }
+  let p;
+  try { p = await profil(); }
+  catch (e) {
+    // Oturum süresi dolmuş ya da token geçersiz: tekrar giriş
+    if (/JWT|token|expired/i.test(e?.message || '') || e?.code === 'PGRST301') { await sb.auth.signOut().catch(() => {}); girisSayfasinaGit(); return null; }
+    cokmeEkrani(hataMetni(e) + ' Bilgileriniz güvende; bağlantı düzelince sayfayı yenileyin.');
+    return null;
+  }
+  if (!p) { await sb.auth.signOut().catch(() => {}); girisSayfasinaGit(); return null; }
   if (beklenenRol === 'admin' && p.rol !== 'admin') { location.replace('/panel'); return null; }
+  // Başka sekmede çıkış yapılırsa ya da oturum yenilenemezse bu sekme de girişe döner
+  sb.auth.onAuthStateChange((olay) => { if (olay === 'SIGNED_OUT') girisSayfasinaGit(); });
   return p;
 }
+
+// ---------- Çökme ve bağlantı dayanıklılığı ----------
+window.addEventListener('unhandledrejection', (e) => { console.error(e.reason); toast(hataMetni(e.reason), true); });
+function baglantiDurumu() {
+  let b = document.getElementById('cevrimdisi');
+  if (navigator.onLine) { b?.remove(); return; }
+  if (b) return;
+  b = document.createElement('div');
+  b.id = 'cevrimdisi';
+  b.setAttribute('role', 'alert');
+  b.textContent = 'İnternet bağlantınız kesildi. Bağlantı gelince işlemlerinize devam edebilirsiniz.';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:200;background:#A8620E;color:#fff;padding:10px 16px;text-align:center;font-weight:700';
+  document.body.append(b);
+}
+window.addEventListener('offline', baglantiDurumu);
+window.addEventListener('online', () => { baglantiDurumu(); toast('Bağlantı geri geldi'); });
 
 export async function cikis() {
   await sb.auth.signOut();

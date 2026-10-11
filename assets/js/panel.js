@@ -2,7 +2,7 @@
 import {
   sb, $, $$, esc, tl, saat, tarih, tarihKisa, gunKisa, gunNo, tarihSaat, saatKes, GUN_ADLARI, GUN_KISA,
   etiket, odaNokta, basHarf, toast, hataMetni, islem, al, koru, imzaliUrl, guvenliDosyaAdi,
-  dialogAc, onayla, kopyala, formVeri,
+  dialogAc, onayla, kopyala, formVeri, ODA_SUTUN, guvenliMeet, baglantilar,
 } from './ortak.js';
 import { kabukKur, sayacYaz } from './kabuk.js';
 
@@ -43,13 +43,14 @@ function baslat(ben) {
   // =========================================================
   async function ozet(kap, _, guncel) {
     const simdi = new Date().toISOString();
-    const [cocuklarL, rez, kayitlar, sabit] = await Promise.all([
+    const [cocuklarL, rez, kayitlar, sabit, meet] = await Promise.all([
       cocuklarAl(),
       al(sb.from('rezervasyonlar')
-        .select('id,kaynak,ogrenci_id,seans:seanslar!inner(id,baslangic,bitis,durum,telafi_mi,oda:odalar(ad,renk,meet_linki,tur))')
+        .select('id,kaynak,ogrenci_id,seans:seanslar!inner(id,baslangic,bitis,durum,telafi_mi,oda:odalar(id,ad,renk,tur))')
         .eq('durum', 'aktif').gte('seans.bitis', simdi).eq('seans.durum', 'planli').limit(300)),
       al(sb.from('kayitlar').select('id,ogrenci_id,gunler,baslangic,bitis,aktif,oda:odalar(ad,renk,baslangic,bitis,tur)').eq('aktif', true)),
       al(sb.from('duyurular').select('*').eq('sabit', true).order('olusturuldu', { ascending: false }).limit(3)),
+      baglantilar(),
     ]);
     if (!guncel()) return;
     rez.sort((a, b) => new Date(a.seans.baslangic) - new Date(b.seans.baslangic));
@@ -80,7 +81,7 @@ function baslat(ben) {
           <div style="text-align:right"><div class="kredi">${kredi}</div><span class="soluk kucuk">seans kredisi</span></div></div>
         ${sonraki ? `<div class="mesaj bilgi" style="margin-bottom:.75rem"><strong>Sıradaki seans:</strong> ${esc(tarihSaat(sonraki.seans.baslangic))}<br>
             ${odaNokta(sonraki.seans.oda.renk)}${esc(sonraki.seans.oda.ad)}${sonraki.seans.telafi_mi ? ' (telafi)' : ''}
-            ${sonraki.seans.oda.meet_linki ? `<div style="margin-top:.6rem"><a class="dugme kucuk" href="${esc(sonraki.seans.oda.meet_linki)}" target="_blank" rel="noopener">Odaya katıl (Meet)</a></div>` : ''}</div>`
+            ${meet[sonraki.seans.oda.id] ? `<div style="margin-top:.6rem"><a class="dugme kucuk" href="${esc(meet[sonraki.seans.oda.id])}" target="_blank" rel="noopener noreferrer">Odaya katıl (Meet)</a></div>` : ''}</div>`
           : '<p class="soluk">Planlanmış seansı yok.</p>'}
         ${kay.length ? `<p class="kucuk" style="margin-bottom:.5rem"><strong>Kayıtlı olduğu odalar</strong></p><ul style="margin:0 0 1rem;padding-left:1.1em">${kay.map((k) => `<li>${odaNokta(k.oda.renk)}${esc(k.oda.ad)}, ${k.gunler.map((g) => GUN_KISA[g]).join(' ')} ${saatKes(k.oda.baslangic)}<span class="soluk kucuk">, ${tarihKisa(k.bitis + 'T12:00:00Z')} tarihine kadar</span></li>`).join('')}</ul>` : ''}
         <div style="display:flex;flex-wrap:wrap;gap:.5rem">
@@ -106,7 +107,7 @@ function baslat(ben) {
       if (error) throw error;
       dialogAc(`<div class="dialog-ic"><h2>Seansınız hazır</h2>
         <p><strong>${esc(data.oda)}</strong><br>${esc(tarihSaat(data.baslangic))}</p>
-        ${data.meet ? `<p>Seans saatinde bu bağlantıya tıklayın:<br><a href="${esc(data.meet)}" target="_blank" rel="noopener">${esc(data.meet)}</a></p>` : ''}
+        ${guvenliMeet(data.meet) ? `<p>Seans saatinde bu bağlantıya tıklayın:<br><a href="${esc(data.meet)}" target="_blank" rel="noopener noreferrer">${esc(data.meet)}</a></p>` : ''}
         <p class="soluk kucuk">Ödevin fotoğrafını şimdiden yüklerseniz öğretmen hazırlıklı gelir.</p>
         <div class="dialog-eylem"><a class="dugme ikincil" href="#odevler/${esc(b.dataset.enErken)}" data-kapat-git>Ödev yükle</a><button class="dugme" data-kapat>Tamam</button></div></div>`,
         (d) => $('[data-kapat-git]', d).addEventListener('click', () => d.close()));
@@ -183,7 +184,7 @@ function baslat(ben) {
     const [liste, paketler, odalar] = await Promise.all([
       cocuklarAl(),
       al(sb.from('paketler').select('*').eq('aktif', true).order('sira')),
-      al(sb.from('odalar').select('*').eq('aktif', true).order('sira')),
+      al(sb.from('odalar').select(ODA_SUTUN).eq('aktif', true).order('sira')),
     ]);
     if (!liste.length) {
       kap.innerHTML = `<div class="icerik-ust"><h1>Paket al</h1></div><div class="bos"><p>Paket almadan önce çocuğunuzu ekleyin.</p><button class="dugme" id="c-ekle">Çocuk ekle</button></div>`;
@@ -336,7 +337,7 @@ function baslat(ben) {
       try {
         const url = await imzaliUrl('odevler', d.dataset.yol);
         const pdf = /\.pdf$/i.test(d.dataset.yol);
-        $('.onizleme', d).innerHTML = pdf ? `<a href="${esc(url)}" target="_blank" rel="noopener">PDF'i aç</a>` : `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="Ödev fotoğrafı" loading="lazy"></a>`;
+        $('.onizleme', d).innerHTML = pdf ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">PDF'i aç</a>` : `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="Ödev fotoğrafı" loading="lazy"></a>`;
       } catch {}
     });
 

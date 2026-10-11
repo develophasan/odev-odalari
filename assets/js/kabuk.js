@@ -1,5 +1,5 @@
 // Panel iskeleti: yan menü, mobil üst çubuk, hash yönlendirme
-import { $, $$, esc, LOGO_SVG, cikis } from './ortak.js';
+import { $, $$, esc, LOGO_SVG, cikis, hataMetni } from './ortak.js';
 
 export function kabukKur({ menu, profil, rolAdi, sayfalar, varsayilan }) {
   document.body.innerHTML = `
@@ -41,7 +41,10 @@ export function kabukKur({ menu, profil, rolAdi, sayfalar, varsayilan }) {
       await sayfalar[sayfa](kap, parametre, () => benim === sira);
     } catch (e) {
       console.error(e);
-      if (benim === sira) kap.innerHTML = `<div class="mesaj hata">Sayfa yüklenemedi: ${esc(e.message || e)}</div>`;
+      if (benim === sira) {
+        kap.innerHTML = `<div class="mesaj hata" role="alert"><strong>Bu sayfa yüklenemedi.</strong><br>${esc(hataMetni(e))}</div><button class="dugme" id="tekrar-dene">Tekrar dene</button>`;
+        $('#tekrar-dene').onclick = git;
+      }
     }
     window.scrollTo(0, 0);
   }

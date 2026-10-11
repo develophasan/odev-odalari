@@ -2,7 +2,7 @@
 import {
   sb, $, $$, esc, tl, saat, tarih, tarihKisa, gunAdi, gunKisa, gunNo, tarihSaat, saatKes, GUN_ADLARI, GUN_KISA,
   etiket, odaNokta, basHarf, toast, islem, al, koru, imzaliUrl, dialogAc, onayla, formVeri,
-  bugunISO, istanbulISO, haftaBasi, gunEkle, DURUM_ADI,
+  bugunISO, istanbulISO, haftaBasi, gunEkle, DURUM_ADI, ODA_SUTUN, guvenliMeet, baglantilar,
 } from './ortak.js';
 import { kabukKur, sayacYaz } from './kabuk.js';
 
@@ -24,10 +24,13 @@ function baslat(ben) {
     { id: 'paketler', ad: 'Paketler ve fiyatlar' },
     { id: 'ayarlar', ad: 'Ayarlar' },
   ];
-  const odalarAl = () => al(sb.from('odalar').select('*').order('sira'));
+  const odalarAl = async () => {
+    const [o, m] = await Promise.all([al(sb.from('odalar').select(ODA_SUTUN).order('sira')), baglantilar()]);
+    return o.map((x) => ({ ...x, meet_linki: m[x.id] || '' }));
+  };
   const ogrencilerAl = () => al(sb.from('ogrenciler').select('*, veli:profiller(ad_soyad,telefon,eposta)').order('ad_soyad'));
   const ust = (baslik, sag = '') => `<div class="icerik-ust"><h1>${esc(baslik)}</h1><div style="display:flex;gap:.5rem;flex-wrap:wrap">${sag}</div></div>`;
-  const SEANS_SEC = 'id,tarih,baslangic,bitis,durum,iptal_nedeni,telafi_mi,oda:odalar(id,ad,renk,kapasite,meet_linki,tur),rez:rezervasyonlar(id,durum,kaynak,ogrenci:ogrenciler(id,ad_soyad,sinif))';
+  const SEANS_SEC = 'id,tarih,baslangic,bitis,durum,iptal_nedeni,telafi_mi,oda:odalar(id,ad,renk,kapasite,tur),rez:rezervasyonlar(id,durum,kaynak,ogrenci:ogrenciler(id,ad_soyad,sinif))';
   const KAYNAK = { abonelik: 'aylık paket', kredi: 'kredi ile', yonetici: 'yönetici ekledi' };
   const aktifRez = (s) => (s.rez || []).filter((r) => r.durum === 'aktif');
   const kabuk = kabukKur({ menu, profil: ben, rolAdi: 'Yönetici', sayfalar, varsayilan: 'bugun' });
@@ -46,13 +49,14 @@ function baslat(ben) {
   // =========================================================
   async function bugun(kap, _, guncel) {
     const gun = bugunISO();
-    const [bildirildi, bekliyor, bugunSeans, ogrSay, bildirim, bekleme] = await Promise.all([
+    const [bildirildi, bekliyor, bugunSeans, ogrSay, bildirim, bekleme, meet] = await Promise.all([
       sb.from('siparisler').select('id', { count: 'exact', head: true }).eq('durum', 'bildirildi'),
       sb.from('siparisler').select('id', { count: 'exact', head: true }).eq('durum', 'bekliyor'),
       al(sb.from('seanslar').select(SEANS_SEC).eq('tarih', gun).order('baslangic')),
       sb.from('ogrenciler').select('id', { count: 'exact', head: true }).eq('aktif', true),
       al(sb.from('bildirimler').select('*').eq('kullanici_id', ben.id).order('olusturuldu', { ascending: false }).limit(12)),
       al(sb.from('siparisler').select('id,kod,sonuc_notu,ogrenci:ogrenciler(ad_soyad,sinif),paket:paketler(ad)').eq('durum', 'onaylandi').ilike('sonuc_notu', '%bekleme%').order('onay_tarihi', { ascending: false }).limit(20)),
+      baglantilar(),
     ]);
     if (!guncel()) return;
     const odevSay = bugunSeans.length ? (await sb.from('odevler').select('seans_id').in('seans_id', bugunSeans.map((s) => s.id))).data || [] : [];
@@ -74,7 +78,7 @@ function baslat(ben) {
             <div><strong>${esc(s.oda.ad)}</strong> ${s.durum !== 'planli' ? etiket(s.durum) : ''} ${s.telafi_mi ? '<span class="etiket">telafi</span>' : ''}<br>
               <span class="soluk kucuk">${aktifRez(s).map((r) => esc(r.ogrenci.ad_soyad)).join(', ') || 'Öğrenci yok'}</span><br>
               <span class="kucuk">${odevSay.filter((o) => o.seans_id === s.id).length} ödev yüklendi</span></div>
-            <div style="display:flex;gap:.4rem;flex-wrap:wrap">${s.oda.meet_linki ? `<a class="dugme kucuk ikincil" href="${esc(s.oda.meet_linki)}" target="_blank" rel="noopener">Meet</a>` : ''}
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap">${meet[s.oda.id] ? `<a class="dugme kucuk ikincil" href="${esc(meet[s.oda.id])}" target="_blank" rel="noopener noreferrer">Meet</a>` : ''}
               <a class="dugme kucuk" href="#seanslar/${s.id}">Yoklama</a></div></div>`).join('') : '<p class="soluk">Bugün seans yok.</p>'}
         </section>
         <section class="kart"><div class="kart-ust"><h2>Bildirimler</h2>${bildirim.some((b) => !b.okundu) ? '<button class="dugme kucuk ikincil" id="okundu">Okundu say</button>' : ''}</div>
@@ -209,15 +213,17 @@ function baslat(ben) {
   }
 
   async function yoklama(kap, seansId) {
-    const [s, devam, odev, tumOgr] = await Promise.all([
+    const [s, devam, odev, tumOgr, meet] = await Promise.all([
       al(sb.from('seanslar').select(SEANS_SEC).eq('id', seansId).single()),
       al(sb.from('devam').select('*').eq('seans_id', seansId)),
       al(sb.from('odevler').select('*').eq('seans_id', seansId)),
       al(sb.from('ogrenciler').select('id,ad_soyad,sinif,notlar').eq('aktif', true).order('ad_soyad')),
+      baglantilar(),
     ]);
+    s.oda.meet_linki = meet[s.oda.id] || '';
     const r = aktifRez(s);
     const secenek = (ad, deger, liste) => `<select name="${ad}">${liste.map(([v, t]) => `<option value="${v}" ${deger === v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
-    kap.innerHTML = ust(`${s.oda.ad}, ${tarih(s.baslangic)} ${saat(s.baslangic)}`, `<a class="dugme kucuk ikincil" href="#seanslar/${haftaBasi(s.tarih)}">Haftaya dön</a>${s.oda.meet_linki ? `<a class="dugme kucuk" href="${esc(s.oda.meet_linki)}" target="_blank" rel="noopener">Meet'i aç</a>` : ''}`) + `
+    kap.innerHTML = ust(`${s.oda.ad}, ${tarih(s.baslangic)} ${saat(s.baslangic)}`, `<a class="dugme kucuk ikincil" href="#seanslar/${haftaBasi(s.tarih)}">Haftaya dön</a>${s.oda.meet_linki ? `<a class="dugme kucuk" href="${esc(s.oda.meet_linki)}" target="_blank" rel="noopener noreferrer">Meet'i aç</a>` : ''}`) + `
       <p class="soluk">${gunAdi(s.baslangic)}, ${saat(s.baslangic)}–${saat(s.bitis)}. ${etiket(s.durum)} ${r.length}/${s.oda.kapasite} koltuk dolu.</p>
       <form id="yoklama-form" class="kart">
         ${r.length ? r.map((x) => {
@@ -420,12 +426,16 @@ function baslat(ben) {
         const kayit = {
           ad: v.ad.trim(), tur: v.tur, gunler: [].concat(v.gunler || []).map(Number), baslangic: v.baslangic, bitis: v.bitis,
           kapasite: Number(v.kapasite), sinif_min: Number(v.sinif_min), sinif_max: Number(v.sinif_max), renk: v.renk,
-          meet_linki: v.meet_linki.trim(), ogretmen: v.ogretmen.trim(), sira: Number(v.sira), aktif: !!f.aktif.checked,
+          ogretmen: v.ogretmen.trim(), sira: Number(v.sira), aktif: !!f.aktif.checked,
         };
+        const meetYeni = v.meet_linki.trim().replace(/\?.*$/, '');
+        if (meetYeni && !guvenliMeet(meetYeni)) { toast('Meet bağlantısı https://meet.google.com/abc-defg-hij biçiminde olmalı', true); return; }
         if (!kayit.gunler.length) { toast('En az bir gün seçin', true); return; }
         islem(e.submitter, async () => {
+          let odaId = o?.id;
           if (o) await al(sb.from('odalar').update(kayit).eq('id', o.id));
-          else await al(sb.from('odalar').insert(kayit));
+          else odaId = (await al(sb.from('odalar').insert(kayit).select('id').single())).id;
+          await al(sb.from('oda_baglanti').upsert({ oda_id: odaId, meet_linki: meetYeni }));
           d.close(); toast('Oda kaydedildi'); kabuk.yenile();
         });
       });
@@ -439,7 +449,7 @@ function baslat(ben) {
       ${liste.map((o) => `<tr><td data-b="Oda">${odaNokta(o.renk)}<strong>${esc(o.ad)}</strong> ${o.aktif ? '' : '<span class="etiket iptal">pasif</span>'}<br><span class="soluk kucuk">${o.tur === 'hafta_sonu' ? 'Hafta sonu' : 'Hafta içi'}, ${esc(o.ogretmen)}</span></td>
         <td data-b="Günler">${o.gunler.map((g) => GUN_KISA[g]).join(' ')}</td><td data-b="Saat">${saatKes(o.baslangic)}–${saatKes(o.bitis)}</td>
         <td data-b="Kapasite">${o.kapasite}</td><td data-b="Sınıf">${o.sinif_min}–${o.sinif_max}</td>
-        <td data-b="Meet">${o.meet_linki ? `<a href="${esc(o.meet_linki)}" target="_blank" rel="noopener">${esc(o.meet_linki.replace('https://meet.google.com/', ''))}</a>` : '—'}</td>
+        <td data-b="Meet">${o.meet_linki ? `<a href="${esc(o.meet_linki)}" target="_blank" rel="noopener noreferrer">${esc(o.meet_linki.replace('https://meet.google.com/', ''))}</a>` : '—'}</td>
         <td class="islem"><button class="dugme kucuk ikincil" data-duzenle="${o.id}">Düzenle</button></td></tr>`).join('')}
       </tbody></table></div>`;
     $('#yeni-oda').onclick = () => odaDialog(null);
@@ -518,8 +528,8 @@ function baslat(ben) {
     $$('[data-yol]', kap).forEach(async (k) => {
       try {
         const url = await imzaliUrl('odevler', k.dataset.yol);
-        $('.onizleme', k).innerHTML = /\.pdf$/i.test(k.dataset.yol) ? `<a class="dugme kucuk ikincil" href="${esc(url)}" target="_blank" rel="noopener">PDF'i aç</a>`
-          : `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="Ödev" loading="lazy" style="width:100%;max-height:260px;object-fit:contain;background:var(--kagit);border-radius:6px"></a>`;
+        $('.onizleme', k).innerHTML = /\.pdf$/i.test(k.dataset.yol) ? `<a class="dugme kucuk ikincil" href="${esc(url)}" target="_blank" rel="noopener noreferrer">PDF'i aç</a>`
+          : `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="Ödev" loading="lazy" style="width:100%;max-height:260px;object-fit:contain;background:var(--kagit);border-radius:6px"></a>`;
       } catch {}
     });
     $$('[data-geri]', kap).forEach((f) => f.addEventListener('submit', (e) => {

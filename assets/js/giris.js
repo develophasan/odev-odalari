@@ -21,9 +21,11 @@ $('[data-geri]').onclick = (e) => { e.preventDefault(); goster('#form-giris'); }
 if (q.has('kayit')) goster('#form-kayit');
 
 async function yonlendir() {
-  const p = await profil();
-  const hedef = q.get('d');
-  if (hedef && hedef.startsWith('/') && !hedef.startsWith('//')) {
+  let p = null;
+  try { p = await profil(); } catch {}
+  const hedef = q.get('d') || '';
+  // Yalnızca sitenin kendi panellerine dönülür (başka siteye yönlendirme engeli)
+  if (/^\/(panel|yonetim)(#[\w\-/]*)?$/.test(hedef)) {
     if (p?.rol === 'admin' || !hedef.startsWith('/yonetim')) { location.replace(hedef); return; }
   }
   location.replace(p?.rol === 'admin' ? '/yonetim' : '/panel');
