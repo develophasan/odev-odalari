@@ -5,6 +5,7 @@ import {
   bugunISO, istanbulISO, haftaBasi, gunEkle, DURUM_ADI, ODA_SUTUN, guvenliMeet, baglantilar,
 } from './ortak.js';
 import { kabukKur, sayacYaz } from './kabuk.js';
+import { meetOlustur, otomatikMeetHazir } from './meet.js';
 
 const ben = await koru('admin');
 if (ben) baslat(ben);
@@ -413,13 +414,28 @@ function baslat(ben) {
       <div class="satir"><div class="alan"><label for="od-smin">En küçük sınıf</label><input id="od-smin" name="sinif_min" type="number" min="1" max="8" value="${o?.sinif_min ?? 1}"></div>
         <div class="alan"><label for="od-smax">En büyük sınıf</label><input id="od-smax" name="sinif_max" type="number" min="1" max="8" value="${o?.sinif_max ?? 4}"></div>
         <div class="alan"><label for="od-renk">Renk</label><input id="od-renk" name="renk" type="color" value="${esc(o?.renk || '#1F5F6B')}"></div></div>
-      <div class="alan"><label for="od-meet">Google Meet bağlantısı</label><input id="od-meet" name="meet_linki" type="url" placeholder="https://meet.google.com/..." value="${esc(o?.meet_linki)}"></div>
+      <div class="alan"><label for="od-meet">Google Meet bağlantısı</label>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap"><input id="od-meet" name="meet_linki" type="url" placeholder="https://meet.google.com/..." value="${esc(o?.meet_linki)}" style="flex:1;min-width:200px">
+        <button type="button" class="dugme ikincil" id="od-meet-olustur">${o?.meet_linki ? 'Yenisini oluştur' : 'Meet oluştur'}</button></div>
+        <small>${otomatikMeetHazir() ? 'Düğme, Google Takvim\'inizde odanın gün ve saatlerinde tekrarlayan bir etkinlik açar ve bağlantıyı buraya yazar.' : 'Düğme yeni sekmede boş bir Meet açar; adres çubuğundaki bağlantıyı kopyalayıp buraya yapıştırın.'}</small></div>
       <div class="satir"><div class="alan"><label for="od-og">Öğretmen</label><input id="od-og" name="ogretmen" value="${esc(o?.ogretmen || 'Kurucu')}"></div>
         <div class="alan"><label for="od-sira">Sıra</label><input id="od-sira" name="sira" type="number" value="${o?.sira ?? 0}"></div></div>
       <label class="onay"><input type="checkbox" name="aktif" ${o?.aktif === false ? '' : 'checked'}> <span>Aktif (sitede görünür, seansları üretilir)</span></label>
       <p class="soluk kucuk">Gün veya saat değişikliğinde gelecek seanslar otomatik yeniden üretilir.</p>
       <div class="dialog-eylem"><button class="dugme ikincil" data-kapat>Vazgeç</button><button class="dugme" type="submit">Kaydet</button></div></form>`, (d) => {
-      $('form', d).addEventListener('submit', (e) => {
+      const form = $('form', d);
+      $('#od-meet-olustur', d).addEventListener('click', (e) => {
+        const v = formVeri(form);
+        const gunler = [].concat(v.gunler || []).map(Number);
+        if (!otomatikMeetHazir()) { window.open('https://meet.google.com/new', '_blank', 'noopener'); $('#od-meet', d).focus(); return; }
+        if (!gunler.length) { toast('Önce günleri seçin', true); return; }
+        islem(e.currentTarget, async () => {
+          const link = await meetOlustur({ ad: v.ad.trim() || 'Oda', gunler, baslangic: v.baslangic, bitis: v.bitis });
+          $('#od-meet', d).value = link;
+          toast('Meet bağlantısı oluşturuldu. Kaydet ile odaya bağlayın.');
+        });
+      });
+      form.addEventListener('submit', (e) => {
         e.preventDefault();
         const f = e.currentTarget;
         const v = formVeri(f);
@@ -449,11 +465,17 @@ function baslat(ben) {
       ${liste.map((o) => `<tr><td data-b="Oda">${odaNokta(o.renk)}<strong>${esc(o.ad)}</strong> ${o.aktif ? '' : '<span class="etiket iptal">pasif</span>'}<br><span class="soluk kucuk">${o.tur === 'hafta_sonu' ? 'Hafta sonu' : 'Hafta içi'}, ${esc(o.ogretmen)}</span></td>
         <td data-b="Günler">${o.gunler.map((g) => GUN_KISA[g]).join(' ')}</td><td data-b="Saat">${saatKes(o.baslangic)}–${saatKes(o.bitis)}</td>
         <td data-b="Kapasite">${o.kapasite}</td><td data-b="Sınıf">${o.sinif_min}–${o.sinif_max}</td>
-        <td data-b="Meet">${o.meet_linki ? `<a href="${esc(o.meet_linki)}" target="_blank" rel="noopener noreferrer">${esc(o.meet_linki.replace('https://meet.google.com/', ''))}</a>` : '—'}</td>
+        <td data-b="Meet">${o.meet_linki ? `<a href="${esc(o.meet_linki)}" target="_blank" rel="noopener noreferrer">${esc(o.meet_linki.replace('https://meet.google.com/', ''))}</a>` : (otomatikMeetHazir() ? `<button class="dugme kucuk" data-meet="${o.id}">Meet oluştur</button>` : '<span class="etiket bekliyor">bağlantı yok</span>')}</td>
         <td class="islem"><button class="dugme kucuk ikincil" data-duzenle="${o.id}">Düzenle</button></td></tr>`).join('')}
       </tbody></table></div>`;
     $('#yeni-oda').onclick = () => odaDialog(null);
     $$('[data-duzenle]', kap).forEach((b) => b.addEventListener('click', () => odaDialog(liste.find((o) => o.id === b.dataset.duzenle))));
+    $$('[data-meet]', kap).forEach((b) => b.addEventListener('click', () => islem(b, async () => {
+      const o = liste.find((x) => x.id === b.dataset.meet);
+      const link = await meetOlustur(o);
+      await al(sb.from('oda_baglanti').upsert({ oda_id: o.id, meet_linki: link }));
+      toast(`${o.ad} için Meet bağlantısı oluşturuldu`); kabuk.yenile();
+    })));
   }
 
   // =========================================================

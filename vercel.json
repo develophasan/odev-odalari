@@ -7,7 +7,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwybzqiwnxaedyhzrxcn.supabase.co; connect-src 'self' https://dwybzqiwnxaedyhzrxcn.supabase.co wss://dwybzqiwnxaedyhzrxcn.supabase.co https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwybzqiwnxaedyhzrxcn.supabase.co; connect-src 'self' https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://dwybzqiwnxaedyhzrxcn.supabase.co wss://dwybzqiwnxaedyhzrxcn.supabase.co https://cdn.jsdelivr.net; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
         },
         {
           "key": "Strict-Transport-Security",

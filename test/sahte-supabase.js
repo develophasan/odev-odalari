@@ -38,9 +38,9 @@ export function createClient() {
       return { data: (V().rpc || {})[ad] ?? null, error: null };
     },
     auth: {
-      getSession: async () => ({ data: { session: V().oturum ? { user: { id: V().oturum } } : null } }),
+      getSession: async () => ({ data: { session: V().oturum && !sessionStorage.getItem('__cikis') ? { user: { id: V().oturum } } : null } }),
       onAuthStateChange: (f) => { dinleyiciler.push(f); return { data: { subscription: { unsubscribe() {} } } }; },
-      signOut: async () => { yaz(['auth', 'signOut']); return {}; },
+      signOut: async () => { yaz(['auth', 'signOut']); sessionStorage.setItem('__cikis', '1'); return {}; },
       signInWithPassword: async () => ({ error: { message: 'Invalid login credentials' } }),
       signUp: async () => ({ data: {}, error: null }), resetPasswordForEmail: async () => ({}), updateUser: async () => ({}),
     },
