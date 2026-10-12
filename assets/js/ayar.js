@@ -5,4 +5,4 @@ export const SUPABASE_ANAHTAR = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi
 
 // Tek tıkla Meet oluşturma için Google OAuth istemci kimliği (herkese açık bir değerdir).
 // Boş bırakılırsa "Meet oluştur" düğmesi meet.google.com/new sayfasını açar.
-export const GOOGLE_CLIENT_ID = '';
+export const GOOGLE_CLIENT_ID = '322114147006-6bnijuh9qdr7j3vbmm965g09mdper1c6.apps.googleusercontent.com';
